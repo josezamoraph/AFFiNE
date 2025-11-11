@@ -1,39 +1,42 @@
-# ---------- Build stage ----------
+# ===== Build stage =====
 FROM node:22-bookworm-slim AS builder
 
 WORKDIR /app
+
+# Instala dependencias básicas
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+
+# Habilita corepack y configura Yarn
 RUN corepack enable && yarn set version stable
 
-# Copiamos los archivos necesarios
-COPY package.json yarn.lock .yarnrc.yml ./
-COPY .yarn/ .yarn/
-COPY packages/ packages/
-COPY tsconfig.json ./
+# Copiamos todo el proyecto (no solo packages)
+COPY . .
 
-# Instalamos dependencias (más compatible con forks incompletos)
+# Desactiva el modo inmutable (útil para forks o repos no 100% bloqueados)
 ENV YARN_ENABLE_IMMUTABLE_INSTALLS=false
+
+# Instala dependencias del monorepo
 RUN yarn install --no-immutable
 
-# Compilamos el servidor
+# Compila el servidor de AFFiNE
 RUN yarn workspace @affine/server build
 
-# ---------- Runtime stage ----------
+
+# ===== Runtime stage =====
 FROM node:22-bookworm-slim
+
 RUN apt-get update && apt-get install -y --no-install-recommends libjemalloc2 openssl ca-certificates && rm -rf /var/lib/apt/lists/*
-ENV LD_PRELOAD=libjemalloc.so.2
+
 WORKDIR /app
 
+ENV LD_PRELOAD=libjemalloc.so.2
+
 # Copiamos artefactos del builder
-COPY --from=builder /app/.pnp.cjs /app/.pnp.cjs
-COPY --from=builder /app/.yarn/ /app/.yarn/
-COPY --from=builder /app/.yarnrc.yml /app/.yarnrc.yml
-COPY --from=builder /app/yarn.lock /app/yarn.lock
+COPY --from=builder /app /app
 
-COPY --from=builder /app/packages/backend/server/dist ./dist
-COPY --from=builder /app/packages/backend/server/package.json ./package.json
-
+# Variables de entorno
 ENV NODE_OPTIONS="--require /app/.pnp.cjs"
 ENV NODE_ENV=production
 
+# Comando de inicio
 CMD ["node", "./dist/main.js"]

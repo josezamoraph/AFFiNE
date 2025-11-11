@@ -1,7 +1,7 @@
 FROM node:22-bookworm-slim
 
-# Copiamos solo el backend y creamos carpetas vacías para evitar errores
-COPY ./apps/backend /app
+# Copiamos el backend correcto
+COPY ./packages/backend/server /app
 RUN mkdir -p /app/static /app/static/admin /app/static/mobile
 WORKDIR /app
 

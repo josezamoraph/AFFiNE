@@ -5,14 +5,13 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 RUN corepack enable && yarn set version stable
 
-# Copiamos archivos de Yarn Berry y el monorepo
+# Copiamos los archivos necesarios
 COPY package.json yarn.lock .yarnrc.yml ./
 COPY .yarn/ .yarn/
 COPY packages/ packages/
-COPY apps/ apps/
 COPY tsconfig.json ./
 
-# Instalamos todos los workspaces (no solo el server)
+# Instalamos todos los workspaces (AFFiNE usa monorepo con Yarn)
 ENV YARN_ENABLE_IMMUTABLE_INSTALLS=false
 RUN yarn workspaces focus --all
 

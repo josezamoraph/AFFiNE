@@ -11,9 +11,9 @@ COPY .yarn/ .yarn/
 COPY packages/ packages/
 COPY tsconfig.json ./
 
-# Instalamos todos los workspaces (AFFiNE usa monorepo con Yarn)
+# Instalamos dependencias (más compatible con forks incompletos)
 ENV YARN_ENABLE_IMMUTABLE_INSTALLS=false
-RUN yarn workspaces focus --all
+RUN yarn install --no-immutable
 
 # Compilamos el servidor
 RUN yarn workspace @affine/server build

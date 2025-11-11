@@ -1,19 +1,16 @@
-FROM node:22-bookworm-slim
-
-# Copiamos todo el monorepo
-COPY . /app
+FROM node:22-bookworm-slim AS builder
 WORKDIR /app
-
-# Instalamos dependencias del monorepo
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends openssl libjemalloc2 && \
-    rm -rf /var/lib/apt/lists/*
-
+COPY . .
 RUN npm ci
 RUN npm run build -w @affine/server
 
-# Preload jemalloc para rendimiento
-ENV LD_PRELOAD=libjemalloc.so.2
+FROM node:22-bookworm-slim
+WORKDIR /app
+COPY --from=builder /app/packages/backend/server/dist ./dist
+COPY --from=builder /app/packages/backend/server/package.json .
+RUN apt-get update && apt-get install -y --no-install-recommends openssl libjemalloc2 && rm -rf /var/lib/apt/lists/*
+RUN npm ci --omit=dev
 
-# Arrancamos el servidor ya compilado
-CMD ["node", "packages/backend/server/dist/main.js"]
+ENV LD_PRELOAD=libjemalloc.so.2
+CMD ["node", "./dist/main.js"]
+

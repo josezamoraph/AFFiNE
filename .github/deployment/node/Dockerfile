@@ -3,16 +3,16 @@ FROM node:22-bookworm-slim AS builder
 
 WORKDIR /app
 
-# Instala dependencias básicas
+# Instala dependencias necesarias del sistema
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 
-# Habilita corepack y configura Yarn
+# Habilita corepack y Yarn estable
 RUN corepack enable && yarn set version stable
 
-# Copiamos todo el proyecto (no solo packages)
+# Copiamos todo el repositorio (necesario para workspaces)
 COPY . .
 
-# Desactiva el modo inmutable (útil para forks o repos no 100% bloqueados)
+# Desactiva el modo inmutable (más compatible con forks o cambios locales)
 ENV YARN_ENABLE_IMMUTABLE_INSTALLS=false
 
 # Instala dependencias del monorepo
@@ -25,17 +25,18 @@ RUN yarn workspace @affine/server build
 # ===== Runtime stage =====
 FROM node:22-bookworm-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends libjemalloc2 openssl ca-certificates && rm -rf /var/lib/apt/lists/*
-
 WORKDIR /app
 
+# Instala librerías básicas
+RUN apt-get update && apt-get install -y --no-install-recommends libjemalloc2 openssl ca-certificates && rm -rf /var/lib/apt/lists/*
+
+# Mejora de rendimiento
 ENV LD_PRELOAD=libjemalloc.so.2
 
-# Copiamos artefactos del builder
+# Copiamos los archivos construidos desde el builder
 COPY --from=builder /app /app
 
-# Variables de entorno
-ENV NODE_OPTIONS="--require /app/.pnp.cjs"
+# Configuración de entorno
 ENV NODE_ENV=production
 
 # Comando de inicio

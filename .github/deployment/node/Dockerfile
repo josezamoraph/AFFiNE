@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     openssl ca-certificates python3 build-essential git \
     && rm -rf /var/lib/apt/lists/*
 
-# Copia todo el contenido del repo
+# Copia todo el contenido del repositorio
 COPY . .
 
 # Configura entorno base
@@ -25,7 +25,9 @@ RUN yarn install --no-immutable
 # ⚙️ Sustituye el módulo nativo @node-rs/argon2 por versión JS
 RUN yarn remove @node-rs/argon2 || true
 RUN yarn add argon2
-RUN sed -i 's/@node-rs\\/argon2/argon2/g' $(grep -rl "@node-rs/argon2" ./packages/backend/server || true)
+
+# Sustituye referencias de @node-rs/argon2 por argon2 (compatible con BusyBox sed)
+RUN grep -rl "@node-rs/argon2" ./packages/backend/server | xargs -r sed -i 's|@node-rs/argon2|argon2|g' || true
 
 # 🚫 Elimina binarios nativos de SQLite y módulos innecesarios
 RUN rm -f /app/packages/backend/server/dist/server-native*.node || true

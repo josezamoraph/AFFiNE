@@ -33,8 +33,8 @@ RUN grep -rl "@node-rs/argon2" ./packages/backend/server | xargs -r sed -i 's|@n
 RUN rm -rf node_modules/better-sqlite3 || true
 RUN find /app -name "*.node" -delete || true
 
-# 🔨 Compila TODO el monorepo (no solo el backend)
-RUN yarn build || yarn build:all || true
+# 🔨 Compila TODO el proyecto (necesario para que exista dist/main.js)
+RUN yarn build:server || yarn build:all || yarn build
 
 # 🔧 Variables por defecto (Railway las sobreescribirá)
 ENV PORT=3010
@@ -50,8 +50,8 @@ ENV AFFINE_ALLOW_UNSAFE_NATIVES=false
 # Abre el puerto
 EXPOSE 3010
 
-# Verifica que el backend fue construido
-RUN test -f packages/backend/server/dist/main.js || (echo "❌ Build no generó dist/main.js" && ls -R packages/backend/server && exit 1)
+# Verifica que el backend fue compilado
+RUN test -f packages/backend/server/dist/main.js || (echo "❌ Backend build no generó dist/main.js. Revisa build script del repo." && ls -R packages/backend/server && exit 1)
 
 # Comando final
 CMD ["node", "packages/backend/server/dist/main.js"]
